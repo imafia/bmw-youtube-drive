@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#101216">
+<title>YouTube Drive · BMW iDrive</title>
+<style>
+:root{color-scheme:dark;--bg:#101216;--panel:#1b1f26;--panel2:#252b34;--text:#f7f8fa;--muted:#aeb6c2;--accent:#ff4545;--focus:#ffd166}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:18px/1.4 -apple-system,BlinkMacSystemFont,Arial,sans-serif}main{max-width:760px;margin:0 auto;padding:18px}header{display:flex;align-items:center;gap:12px;margin:6px 0 20px}.logo{width:46px;height:46px;border-radius:14px;background:var(--accent);display:grid;place-items:center;font-size:25px;font-weight:900}h1{font-size:25px;margin:0}p{color:var(--muted);margin:7px 0 18px}.panel{background:var(--panel);border:1px solid #343b46;border-radius:16px;padding:16px;margin:14px 0}.label{font-size:15px;color:var(--muted);display:block;margin:0 0 8px}input{width:100%;font:inherit;color:var(--text);background:#0c0e12;border:2px solid #4a5361;border-radius:12px;padding:16px;outline:none}button,.linkbtn{display:flex;align-items:center;justify-content:center;width:100%;min-height:60px;margin-top:12px;border:2px solid transparent;border-radius:12px;background:var(--accent);color:white;font:700 19px inherit;font-size:19px;font-weight:750;text-decoration:none;padding:14px;cursor:pointer}button.secondary{background:var(--panel2);border-color:#414a58}.item:focus,input:focus,button:focus,.linkbtn:focus{outline:4px solid var(--focus);outline-offset:3px}.status{white-space:pre-wrap;color:var(--muted);font-size:15px;min-height:22px}.small{font-size:13px;color:var(--muted)}.hidden{display:none}.notice{border-left:4px solid var(--focus);padding:10px 12px;background:#28251d;border-radius:8px;color:#eee2bd;font-size:14px}.row{display:flex;gap:10px}.row>*{flex:1}
+</style>
+</head>
+<body><main>
+<header><div class="logo">▶</div><div><h1>YouTube Drive</h1><div class="small">Прототип для BMW iDrive · APTV</div></div></header>
+<p>Введи точное название песни или видео. Плеер попробует найти первый результат и сразу открыть его, без списка для выбора.</p>
+<section class="panel">
+<label class="label" for="query">Название видео / исполнитель</label>
+<input id="query" type="search" autocomplete="off" autocapitalize="sentences" placeholder="Например: Sting Desert Rose" enterkeyhint="search">
+<button id="go" type="button">НАЙТИ И ОТКРЫТЬ ПЕРВОЕ ВИДЕО</button>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+</section>
+<section class="panel">
+<div class="notice">Если сторонний поисковый сервер недоступен, кнопка откроет обычный поиск YouTube. Это тестовый вариант: автоматический запуск может быть ограничен браузером или YouTube.</div>
+<button id="fallback" class="secondary" type="button">Открыть поиск YouTube вручную</button>
+</section>
+<div class="small">Поиск первого результата использует публичный Invidious API без ключа. Доступность зависит от стороннего сервера. Никакие данные не сохраняются на этом сайте.</div>
+</main>
+<script>
+const q=document.getElementById('query'), go=document.getElementById('go'), status=document.getElementById('status'), fallback=document.getElementById('fallback');
+const instances=['https://yewtu.be','https://inv.nadeko.net','https://invidious.nerdvpn.de'];
+function youtubeSearch(){const term=q.value.trim();if(!term){status.textContent='Сначала введи название.';q.focus();return;}location.href='https://m.youtube.com/results?search_query='+encodeURIComponent(term)}
+async function findFirst(){const term=q.value.trim();if(!term){status.textContent='Сначала введи название.';q.focus();return;}go.disabled=true;go.textContent='ИЩУ…';status.textContent='Пробую найти первый результат…';
+ for(const base of instances){try{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),5000);const response=await fetch(base+'/api/v1/search?q='+encodeURIComponent(term)+'&type=video',{signal:controller.signal,headers:{'Accept':'application/json'}});clearTimeout(timer);if(!response.ok)continue;const data=await response.json();const item=data.find(x=>x.type==='video'&&x.videoId);if(item){status.textContent='Найдено: '+(item.title||term)+'\nОткрываю видео…';location.href='https://www.youtube.com/watch?v='+encodeURIComponent(item.videoId)+'&autoplay=1';return;}}catch(e){/* try next public instance */}}
+ status.textContent='Автоматический поиск сейчас недоступен. Открываю поиск YouTube.';setTimeout(youtubeSearch,700);}
+go.addEventListener('click',findFirst);fallback.addEventListener('click',youtubeSearch);q.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findFirst()}});
+</script></body></html>
